@@ -21,6 +21,9 @@ func resourceAppScanApplication() *schema.Resource {
 		Read:   resourceAppScanApplicationRead,
 		Update: resourceAppScanApplicationUpdate,
 		Delete: resourceAppScanApplicationDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -32,7 +35,6 @@ func resourceAppScanApplication() *schema.Resource {
 				Optional:    true,
 				Description: "A description of the application.",
 			},
-			// New required attribute.
 			"asset_group_id": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -94,6 +96,7 @@ func resourceAppScanApplicationCreate(d *schema.ResourceData, m interface{}) err
 	d.SetId(id)
 	return resourceAppScanApplicationRead(d, m)
 }
+
 func resourceAppScanApplicationRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(*AppScanClient)
 	id := d.Id()
@@ -128,7 +131,7 @@ func resourceAppScanApplicationRead(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	// Unmarshal response from the "Items" key instead of "value".
+	// Unmarshal response from the "Items" key.
 	var result struct {
 		Items []map[string]interface{} `json:"Items"`
 	}
@@ -145,6 +148,10 @@ func resourceAppScanApplicationRead(d *schema.ResourceData, m interface{}) error
 	}
 	if v, ok := app["Description"].(string); ok {
 		d.Set("description", v)
+	}
+	// Import the current AssetGroupId.
+	if v, ok := app["AssetGroupId"].(string); ok {
+		d.Set("asset_group_id", v)
 	}
 	return nil
 }
