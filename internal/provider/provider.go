@@ -102,8 +102,9 @@ func Provider() *schema.Provider {
 			"appscan_application": resourceAppScanApplication(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"appscan_asset_groups": dataSourceAssetGroups(),
-			"appscan_asset_group":  dataSourceAssetGroup(),
+			"appscan_asset_groups":  dataSourceAssetGroups(),
+			"appscan_asset_group":   dataSourceAssetGroup(),
+			"appscan_business_unit": dataSourceBusinessUnit(),
 		},
 		ConfigureFunc: providerConfigure,
 	}

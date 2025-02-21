@@ -9,11 +9,8 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
-
-// ----------------------------------------------------------------
-// Resource: appscan_application
-// ----------------------------------------------------------------
 
 func resourceAppScanApplication() *schema.Resource {
 	return &schema.Resource{
@@ -41,6 +38,18 @@ func resourceAppScanApplication() *schema.Resource {
 				ForceNew:    true,
 				Description: "The asset group ID to which this application belongs.",
 			},
+			"business_unit_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The Business Unit ID associated with this application.",
+			},
+			"business_impact": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "Unspecified",
+				Description:  "The business impact of the application. Allowed values: Unspecified, Low, Medium, High, Critical.",
+				ValidateFunc: validation.StringInSlice([]string{"Unspecified", "Low", "Medium", "High", "Critical"}, false),
+			},
 			"id": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -58,6 +67,13 @@ func resourceAppScanApplicationCreate(d *schema.ResourceData, m interface{}) err
 		"Description":  d.Get("description").(string),
 		"AssetGroupId": assetGroupID,
 	}
+	// Include BusinessUnitId if provided.
+	if bu, ok := d.GetOk("business_unit_id"); ok {
+		payload["BusinessUnitId"] = bu.(string)
+	}
+	// Always include BusinessImpact (defaulted to "Unspecified" if not set)
+	payload["BusinessImpact"] = d.Get("business_impact").(string)
+
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -101,7 +117,6 @@ func resourceAppScanApplicationRead(d *schema.ResourceData, m interface{}) error
 	client := m.(*AppScanClient)
 	id := d.Id()
 
-	// Build an OData filter without quotes around the id.
 	query := url.Values{}
 	query.Set("$filter", fmt.Sprintf("Id eq %s", id))
 	urlStr := fmt.Sprintf("%s/api/v4/Apps?%s", client.ApiEndpoint, query.Encode())
@@ -131,7 +146,6 @@ func resourceAppScanApplicationRead(d *schema.ResourceData, m interface{}) error
 		return err
 	}
 
-	// Unmarshal response from the "Items" key.
 	var result struct {
 		Items []map[string]interface{} `json:"Items"`
 	}
@@ -149,9 +163,14 @@ func resourceAppScanApplicationRead(d *schema.ResourceData, m interface{}) error
 	if v, ok := app["Description"].(string); ok {
 		d.Set("description", v)
 	}
-	// Import the current AssetGroupId.
 	if v, ok := app["AssetGroupId"].(string); ok {
 		d.Set("asset_group_id", v)
+	}
+	if v, ok := app["BusinessUnitId"].(string); ok {
+		d.Set("business_unit_id", v)
+	}
+	if v, ok := app["BusinessImpact"].(string); ok {
+		d.Set("business_impact", v)
 	}
 	return nil
 }
@@ -160,11 +179,16 @@ func resourceAppScanApplicationUpdate(d *schema.ResourceData, m interface{}) err
 	client := m.(*AppScanClient)
 	id := d.Id()
 
-	// asset_group_id is ForceNew so it's not updated.
+	// asset_group_id is ForceNew so it is not updated.
 	payload := map[string]interface{}{
 		"Name":        d.Get("name").(string),
 		"Description": d.Get("description").(string),
 	}
+	if bu, ok := d.GetOk("business_unit_id"); ok {
+		payload["BusinessUnitId"] = bu.(string)
+	}
+	payload["BusinessImpact"] = d.Get("business_impact").(string)
+
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err

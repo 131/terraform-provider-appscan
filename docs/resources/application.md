@@ -22,6 +22,8 @@ description: |-
 
 ### Optional
 
+- `business_impact` (String) The business impact of the application. Allowed values: Unspecified, Low, Medium, High, Critical.
+- `business_unit_id` (String) The Business Unit ID associated with this application.
 - `description` (String) A description of the application.
 
 ### Read-Only
