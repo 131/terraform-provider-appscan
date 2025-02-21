@@ -1,4 +1,4 @@
-module terraform-provider-appscan
+module github.com/131/terraform-provider-appscan
 
 go 1.23.3
 
